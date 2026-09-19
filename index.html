@@ -105,8 +105,9 @@ alter publication supabase_realtime add table clientes, produtos, pedidos, caixa
 </script>
   
 
+
 <script>
-// Dashboard botao Vendas que FUNCIONA - fix
+// Dashboard botao Vendas que FUNCIONA - restaurado
 (function(){
   let added=false;
   function addBtn(){
@@ -122,38 +123,25 @@ alter publication supabase_realtime add table clientes, produtos, pedidos, caixa
           b.textContent='+ Nova Venda';
           b.style.cssText='background:#00A8FF;color:white;border-radius:12px;padding:10px 20px;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-left:16px;';
           b.onclick=()=>{
-            // Tenta várias formas de navegar para Nova Venda
-            // 1. Clica no item da sidebar
-            const sidebar = document.querySelector('aside, nav, div[class*="sidebar"]');
+            const sidebar=document.querySelector('aside, nav');
             if(sidebar){
-              const items = Array.from(sidebar.querySelectorAll('button, a, div[role="button"], div.cursor-pointer'));
+              const items=Array.from(sidebar.querySelectorAll('button, a'));
               for(let item of items){
-                if(item.textContent && item.textContent.toLowerCase().includes('nova venda')){
-                  item.click();
-                  console.log('Clicou sidebar Nova Venda');
-                  return;
+                if(item.textContent.toLowerCase().includes('nova venda')){
+                  item.click(); return;
                 }
               }
             }
-            // 2. Procura botão Nova Venda em qualquer lugar
-            const allBtns = Array.from(document.querySelectorAll('button'));
-            for(let btn of allBtns){
-              if(btn.textContent.trim().toLowerCase() === 'nova venda' && btn.id !== 'btn-vendas-dash-fix'){
-                btn.click();
-                console.log('Clicou botão Nova Venda');
-                return;
-              }
-            }
-            // 3. Fallback hash
-            window.location.hash = '#nova-venda';
-            console.log('Usou hash #nova-venda');
+            const all=Array.from(document.querySelectorAll('button'));
+            const nv=all.find(x=>x.textContent.trim()==='Nova venda');
+            if(nv) nv.click();
           };
           p.style.display='flex';
           p.style.alignItems='center';
           p.style.justifyContent='space-between';
           p.appendChild(b);
           added=true;
-          console.log('Botão Vendas dashboard adicionado e funcionando');
+          console.log('Botão dashboard restaurado');
           break;
         }
       }
@@ -164,163 +152,223 @@ alter publication supabase_realtime add table clientes, produtos, pedidos, caixa
 })();
 </script>
 
+
 <script>
-// Financeiro: Lucro dia/mes/periodo - CORRIGIDO para ficar no Financeiro/Caixa
+// Financeiro LUCRO DE HOJE, LUCRO DO MES, LUCRO DO PERIODO - VERSAO DEFINITIVA QUE APARECE NO CAIXA/FINANCEIRO
 (function(){
-  function enhanceFinanceiroFix(){
-    // Procura por "Caixa" ou "Financeiro" no menu ou título, não por "Resumo Financeiro" que existe na Nova Venda também
-    const isFinanceiroPage = () => {
-      // Verifica se estamos na página Financeiro/Caixa
-      const url = window.location.href.toLowerCase();
-      const hash = window.location.hash.toLowerCase();
-      const bodyText = document.body.innerText.toLowerCase();
-      
-      // Se URL ou hash contém caixa ou financeiro
-      if(url.includes('caixa') || hash.includes('caixa') || hash.includes('financeiro')) return true;
-      
-      // Se tem título "Caixa" ou "Financeiro" e também tem "Entradas" e "Saídas" (característico do financeiro)
-      const hasCaixaTitle = Array.from(document.querySelectorAll('h1,h2')).some(h => 
-        h.textContent.toLowerCase().includes('caixa') || h.textContent.toLowerCase().includes('financeiro')
-      );
-      const hasEntradasSaidas = bodyText.includes('entradas') && bodyText.includes('saídas');
-      
-      return hasCaixaTitle && hasEntradasSaidas;
-    };
+  function addLucroDefinitivo(){
+    // Verifica se estamos no Caixa/Financeiro pela URL ou pelo conteúdo
+    const url = window.location.href.toLowerCase();
+    const hash = window.location.hash.toLowerCase();
+    const bodyText = document.body.innerText;
     
-    if(!isFinanceiroPage()) return;
-    if(document.getElementById('lucro-periodo-cards-fix')) return;
+    // Só executa se parecer ser Financeiro/Caixa
+    const isFinanceiro = bodyText.includes('Caixa') || url.includes('caixa') || hash.includes('caixa') || 
+                         (bodyText.includes('Financeiro') && bodyText.includes('Saldo'));
     
-    // Procura container do Financeiro - deve ter "Saldo" ou "Entradas" e ser um card branco grande
-    const containers = Array.from(document.querySelectorAll('div.bg-white.rounded-\[20px\], div.bg-white.rounded-\[14px\]'));
-    let targetContainer = null;
+    if(!isFinanceiro) return;
+    if(document.getElementById('lucro-hoje-mes-periodo-definitivo')) return;
     
-    for(let cont of containers){
-      const text = cont.innerText.toLowerCase();
-      // Financeiro tem Saldo, Entradas, Saídas, e não tem "Adicionar serviço"
-      if(text.includes('saldo') && text.includes('entradas') && !text.includes('adicionar serviço')){
-        // E tem tamanho razoável
-        if(cont.innerText.length > 200 && cont.innerText.length < 5000){
-          targetContainer = cont;
-          break;
-        }
+    // Procura container que tem Saldo
+    const allDivs = document.querySelectorAll('div');
+    let target = null;
+    let maxScore = 0;
+    
+    for(let div of allDivs){
+      const text = div.innerText || '';
+      let score = 0;
+      if(text.includes('Saldo')) score += 10;
+      if(text.includes('Entradas')) score += 5;
+      if(text.includes('Saídas') || text.includes('Saidas')) score += 5;
+      if(text.includes('R$')) score += 3;
+      if(text.includes('Adicionar serviço ao pedido')) score -= 100; // Não é financeiro
+      if(text.length > 500 && text.length < 10000) score += 2;
+      if(text.includes('Resumo Financeiro')) score += 8;
+      
+      if(score > maxScore && score >= 15){
+        maxScore = score;
+        target = div;
       }
     }
     
-    if(!targetContainer) return;
+    if(!target) return;
     
     // Verifica se já tem lucro
-    if(targetContainer.innerHTML.includes('Lucro do Dia')) return;
+    if(target.innerHTML.includes('LUCRO DE HOJE') || target.innerHTML.includes('Lucro do Dia') || document.getElementById('lucro-hoje-mes-periodo-definitivo')) return;
     
-    const lucroCards = document.createElement('div');
-    lucroCards.id = 'lucro-periodo-cards-fix';
-    lucroCards.innerHTML = `
-      <div style="margin-top:24px; padding-top:24px; border-top:2px solid #f4f4f5;">
-        <h3 style="font-size:16px; font-weight:800; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
-          <span style="background:#FF1E8F; width:4px; height:20px; border-radius:2px; display:inline-block;"></span>
-          Lucro por Período
+    console.log('Adicionando LUCRO DE HOJE, MES, PERIODO no CAIXA/FINANCEIRO, score:', maxScore);
+    
+    const lucroHTML = document.createElement('div');
+    lucroHTML.id = 'lucro-hoje-mes-periodo-definitivo';
+    lucroHTML.innerHTML = `
+      <div style="margin:24px 0; padding:20px; background:linear-gradient(135deg, #fff 0%, #f9fafb 100%); border-radius:20px; border:2px solid #e4e4e7;">
+        <h3 style="font-size:18px; font-weight:800; margin-bottom:16px; color:#111; display:flex; align-items:center; gap:10px;">
+          <span style="background:#111; color:white; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px;">💰</span>
+          LUCRO POR PERÍODO
         </h3>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
-          <div style="background:white; border:2px solid #FF1E8F; border-radius:16px; padding:16px; box-shadow:0 2px 8px rgba(255,30,143,0.1);">
-            <div style="font-size:11px; font-weight:700; color:#71717a; text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px;">Lucro do Dia</div>
-            <div id="lucro-dia-valor-fix" style="font-size:22px; font-weight:800; color:#FF1E8F;">R$ 0,00</div>
-            <div id="lucro-dia-info-fix" style="font-size:11px; color:#71717a; margin-top:6px; line-height:1.4;">0 vendas hoje</div>
+        
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px;">
+          <div style="background:white; border-radius:16px; padding:20px; border-left:5px solid #FF1E8F; box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:11px; font-weight:700; color:#71717a; text-transform:uppercase; letter-spacing:0.5px;">LUCRO DE HOJE</span>
+              <span style="background:#FF1E8F; color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px;">HOJE</span>
+            </div>
+            <div id="lucro-hoje-valor-final" style="font-size:24px; font-weight:800; color:#FF1E8F; line-height:1;">R$ 0,00</div>
+            <div id="lucro-hoje-detalhes" style="font-size:11px; color:#71717a; margin-top:8px; line-height:1.4;">0 vendas • R$ 0,00 faturado</div>
+            <div style="margin-top:12px; height:4px; background:#f4f4f5; border-radius:2px; overflow:hidden;">
+              <div id="lucro-hoje-bar" style="height:100%; background:#FF1E8F; width:0%; transition:width 0.5s;"></div>
+            </div>
           </div>
-          <div style="background:white; border:2px solid #00A8FF; border-radius:16px; padding:16px; box-shadow:0 2px 8px rgba(0,168,255,0.1);">
-            <div style="font-size:11px; font-weight:700; color:#71717a; text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px;">Lucro do Mês</div>
-            <div id="lucro-mes-valor-fix" style="font-size:22px; font-weight:800; color:#00A8FF;">R$ 0,00</div>
-            <div id="lucro-mes-info-fix" style="font-size:11px; color:#71717a; margin-top:6px; line-height:1.4;">0 vendas no mês</div>
+          
+          <div style="background:white; border-radius:16px; padding:20px; border-left:5px solid #00A8FF; box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:11px; font-weight:700; color:#71717a; text-transform:uppercase; letter-spacing:0.5px;">LUCRO DO MÊS</span>
+              <span style="background:#00A8FF; color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px;">MÊS</span>
+            </div>
+            <div id="lucro-mes-valor-final" style="font-size:24px; font-weight:800; color:#00A8FF; line-height:1;">R$ 0,00</div>
+            <div id="lucro-mes-detalhes" style="font-size:11px; color:#71717a; margin-top:8px; line-height:1.4;">0 vendas no mês</div>
+            <div style="margin-top:12px; height:4px; background:#f4f4f5; border-radius:2px; overflow:hidden;">
+              <div id="lucro-mes-bar" style="height:100%; background:#00A8FF; width:0%; transition:width 0.5s;"></div>
+            </div>
           </div>
-          <div style="background:white; border:2px solid #111; border-radius:16px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-            <div style="font-size:11px; font-weight:700; color:#71717a; text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px;">Lucro do Período</div>
-            <div id="lucro-periodo-valor-fix" style="font-size:22px; font-weight:800; color:#111;">R$ 0,00</div>
-            <div style="display:flex; gap:8px; margin-top:10px;">
-              <select id="filtro-lucro-periodo-fix" style="flex:1; height:36px; border-radius:10px; border:2px solid #e4e4e7; font-size:12px; padding:0 10px; background:white; font-weight:600;">
+          
+          <div style="background:white; border-radius:16px; padding:20px; border-left:5px solid #111; box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:11px; font-weight:700; color:#71717a; text-transform:uppercase; letter-spacing:0.5px;">LUCRO DO PERÍODO</span>
+              <span style="background:#111; color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px;" id="lucro-periodo-badge">PERÍODO</span>
+            </div>
+            <div id="lucro-periodo-valor-final" style="font-size:24px; font-weight:800; color:#111; line-height:1;">R$ 0,00</div>
+            <div style="margin-top:12px;">
+              <select id="filtro-periodo-final" style="width:100%; height:36px; border-radius:10px; border:2px solid #e4e4e7; font-size:12px; padding:0 12px; background:white; font-weight:600; outline:none;">
                 <option value="hoje">Hoje</option>
                 <option value="semana">Esta Semana</option>
                 <option value="mes" selected>Este Mês</option>
                 <option value="todo">Todo Período</option>
               </select>
             </div>
-            <div id="lucro-periodo-info-fix" style="font-size:11px; color:#71717a; margin-top:6px; line-height:1.4;">Filtrado</div>
+            <div id="lucro-periodo-detalhes" style="font-size:11px; color:#71717a; margin-top:8px; line-height:1.4;">Filtrado</div>
           </div>
+        </div>
+        
+        <div style="margin-top:16px; padding:12px; background:#FFCC00; background:linear-gradient(135deg, #FFCC00 0%, #FFD700 100%); border-radius:12px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">💡 Dica</div>
+            <div style="font-size:12px; font-weight:600; margin-top:2px;">Lucro = Venda - Custo • Margem = Lucro / Venda</div>
+          </div>
+          <div id="margem-media" style="font-size:14px; font-weight:800;">0% margem</div>
         </div>
       </div>
     `;
     
-    targetContainer.appendChild(lucroCards);
+    // Adiciona no final do target
+    target.appendChild(lucroHTML);
     
-    function calcularLucrosFix(){
+    function calcularLucros(){
       try{
         const pedidos = JSON.parse(localStorage.getItem('ip_pedidos_v5')||'[]');
-        const hojeStr = new Date().toDateString();
-        const mes = new Date().getMonth();
-        const ano = new Date().getFullYear();
+        const hoje = new Date().toDateString();
+        const mesAtual = new Date().getMonth();
+        const anoAtual = new Date().getFullYear();
         
-        let lucroDia = 0, vendasDia = 0, fatDia = 0;
-        let lucroMes = 0, vendasMes = 0, fatMes = 0;
+        let lHoje=0, vHoje=0, fHoje=0, cHoje=0;
+        let lMes=0, vMes=0, fMes=0, cMes=0;
         
         pedidos.forEach(p=>{
-          if(p.status === 'Orçamento') return;
-          const data = new Date(p.data || p.criadoEm || Date.now());
-          const lucro = (p.subtotalVenda || p.total || 0) - (p.subtotalCusto || p.custoTotal || 0);
+          if(p.status==='Orçamento' || p.status==='orcamento') return;
+          const data = new Date(p.data || p.criadoEm || p.criado_em || Date.now());
+          const venda = p.subtotalVenda || p.total || p.valorTotal || 0;
+          const custo = p.subtotalCusto || p.custoTotal || p.custo || 0;
+          const lucro = venda - custo;
           
-          if(data.toDateString() === hojeStr){
-            lucroDia += lucro;
-            vendasDia++;
-            fatDia += (p.subtotalVenda || p.total || 0);
+          if(data.toDateString()===hoje){
+            lHoje+=lucro; vHoje++; fHoje+=venda; cHoje+=custo;
           }
-          if(data.getMonth() === mes && data.getFullYear() === ano){
-            lucroMes += lucro;
-            vendasMes++;
-            fatMes += (p.subtotalVenda || p.total || 0);
+          if(data.getMonth()===mesAtual && data.getFullYear()===anoAtual){
+            lMes+=lucro; vMes++; fMes+=venda; cMes+=custo;
           }
         });
         
-        const elDiaValor = document.getElementById('lucro-dia-valor-fix');
-        const elDiaInfo = document.getElementById('lucro-dia-info-fix');
-        const elMesValor = document.getElementById('lucro-mes-valor-fix');
-        const elMesInfo = document.getElementById('lucro-mes-info-fix');
+        const elHoje = document.getElementById('lucro-hoje-valor-final');
+        const elHojeDet = document.getElementById('lucro-hoje-detalhes');
+        const elHojeBar = document.getElementById('lucro-hoje-bar');
+        const elMes = document.getElementById('lucro-mes-valor-final');
+        const elMesDet = document.getElementById('lucro-mes-detalhes');
+        const elMesBar = document.getElementById('lucro-mes-bar');
         
-        if(elDiaValor) elDiaValor.textContent = 'R$ ' + lucroDia.toFixed(2).replace('.',',');
-        if(elDiaInfo) elDiaInfo.textContent = vendasDia + ' vendas • R$ ' + fatDia.toFixed(2).replace('.',',') + ' faturado';
-        if(elMesValor) elMesValor.textContent = 'R$ ' + lucroMes.toFixed(2).replace('.',',');
-        if(elMesInfo) elMesInfo.textContent = vendasMes + ' vendas no mês • R$ ' + fatMes.toFixed(2).replace('.',',');
+        if(elHoje) elHoje.textContent = 'R$ ' + lHoje.toFixed(2).replace('.',',');
+        if(elHojeDet) elHojeDet.textContent = vHoje + ' vendas • R$ ' + fHoje.toFixed(2).replace('.',',') + ' faturado • Custo R$ ' + cHoje.toFixed(2).replace('.',',');
+        if(elHojeBar) elHojeBar.style.width = Math.min(100, (lHoje / Math.max(1, fHoje)) * 100 * 3) + '%';
         
-        const filtro = document.getElementById('filtro-lucro-periodo-fix')?.value || 'mes';
-        let lucroPeriodo = 0, vendasPeriodo = 0, fatPeriodo = 0;
+        if(elMes) elMes.textContent = 'R$ ' + lMes.toFixed(2).replace('.',',');
+        if(elMesDet) elMesDet.textContent = vMes + ' vendas no mês • R$ ' + fMes.toFixed(2).replace('.',',') + ' faturado';
+        if(elMesBar) elMesBar.style.width = Math.min(100, (lMes / Math.max(1, fMes)) * 100 * 3) + '%';
+        
+        const filtro = document.getElementById('filtro-periodo-final')?.value || 'mes';
+        let lPer=0, vPer=0, fPer=0, cPer=0;
         let inicio = new Date();
-        if(filtro === 'hoje') inicio.setHours(0,0,0,0);
-        else if(filtro === 'semana') inicio.setDate(inicio.getDate()-7);
-        else if(filtro === 'mes') { inicio.setDate(1); inicio.setHours(0,0,0,0); }
-        else if(filtro === 'todo') inicio = new Date(0);
+        if(filtro==='hoje') inicio.setHours(0,0,0,0);
+        else if(filtro==='semana') inicio.setDate(inicio.getDate()-7);
+        else if(filtro==='mes'){ inicio.setDate(1); inicio.setHours(0,0,0,0); }
+        else if(filtro==='todo') inicio = new Date(0);
         
         pedidos.forEach(p=>{
-          if(p.status === 'Orçamento') return;
-          const data = new Date(p.data || p.criadoEm || Date.now());
+          if(p.status==='Orçamento' || p.status==='orcamento') return;
+          const data = new Date(p.data || p.criadoEm || p.criado_em || Date.now());
           if(data >= inicio){
-            lucroPeriodo += (p.subtotalVenda || p.total || 0) - (p.subtotalCusto || p.custoTotal || 0);
-            vendasPeriodo++;
-            fatPeriodo += (p.subtotalVenda || p.total || 0);
+            const venda = p.subtotalVenda || p.total || p.valorTotal || 0;
+            const custo = p.subtotalCusto || p.custoTotal || p.custo || 0;
+            lPer += venda - custo;
+            vPer++;
+            fPer += venda;
+            cPer += custo;
           }
         });
         
-        const elPerValor = document.getElementById('lucro-periodo-valor-fix');
-        const elPerInfo = document.getElementById('lucro-periodo-info-fix');
-        if(elPerValor) elPerValor.textContent = 'R$ ' + lucroPeriodo.toFixed(2).replace('.',',');
-        if(elPerInfo) elPerInfo.textContent = vendasPeriodo + ' vendas • R$ ' + fatPeriodo.toFixed(2).replace('.',',') + ' • ' + filtro;
+        const elPer = document.getElementById('lucro-periodo-valor-final');
+        const elPerDet = document.getElementById('lucro-periodo-detalhes');
+        const elBadge = document.getElementById('lucro-periodo-badge');
+        const elMargem = document.getElementById('margem-media');
         
-      }catch(e){ console.log('Erro calcular lucros fix', e); }
+        if(elPer) elPer.textContent = 'R$ ' + lPer.toFixed(2).replace('.',',');
+        if(elPerDet) elPerDet.textContent = vPer + ' vendas • R$ ' + fPer.toFixed(2).replace('.',',') + ' • Custo R$ ' + cPer.toFixed(2).replace('.',',');
+        if(elBadge) elBadge.textContent = filtro.toUpperCase();
+        if(elMargem){
+          const margem = fPer > 0 ? (lPer / fPer * 100) : 0;
+          elMargem.textContent = margem.toFixed(1) + '% margem média';
+        }
+        
+      }catch(e){
+        console.log('Erro calcular lucros definitivo', e);
+      }
     }
     
-    setInterval(calcularLucrosFix, 3000);
-    setTimeout(calcularLucrosFix, 1000);
-    document.getElementById('filtro-lucro-periodo-fix')?.addEventListener('change', calcularLucrosFix);
+    setInterval(calcularLucros, 2000);
+    setTimeout(calcularLucros, 500);
     
-    console.log('Financeiro lucro dia/mes/periodo FIX adicionado no Financeiro correto');
+    const filtroEl = document.getElementById('filtro-periodo-final');
+    if(filtroEl){
+      filtroEl.addEventListener('change', calcularLucros);
+    }
+    
+    console.log('✅ LUCRO DE HOJE, LUCRO DO MÊS, LUCRO DO PERÍODO adicionados no CAIXA/FINANCEIRO');
   }
   
-  setInterval(enhanceFinanceiroFix, 2000);
-  setTimeout(enhanceFinanceiroFix, 1500);
+  // Tenta várias vezes
+  setInterval(addLucroDefinitivo, 1500);
+  setTimeout(addLucroDefinitivo, 800);
+  setTimeout(addLucroDefinitivo, 2000);
+  setTimeout(addLucroDefinitivo, 3500);
+  
+  window.addEventListener('hashchange', () => {
+    setTimeout(addLucroDefinitivo, 600);
+  });
+  
+  // Também tenta quando clica no menu
+  document.addEventListener('click', (e)=>{
+    if(e.target.textContent && (e.target.textContent.toLowerCase().includes('caixa') || e.target.textContent.toLowerCase().includes('financeiro'))){
+      setTimeout(addLucroDefinitivo, 800);
+    }
+  });
 })();
 </script>
 
