@@ -244,147 +244,47 @@ alter publication supabase_realtime add table clientes, produtos, pedidos, caixa
 </script>
 
 
-<script>
-// Dashboard fix: remover LUCRO DE HOJE e adicionar botao Vendas - mantendo layout original
-(function(){
-  function fixDashboard(){
-    // Procura por elementos que contem LUCRO e esconde
-    const allDivs = document.querySelectorAll('div');
-    allDivs.forEach(div=>{
-      const text = div.textContent || '';
-      // Se tem LUCRO DE HOJE ou Lucro de hoje e parece ser um card (tem R$ e é pequeno)
-      if((text.includes('LUCRO DE HOJE') || text.includes('Lucro de hoje') || (text.includes('Lucro') && text.includes('Hoje'))) && text.includes('R$') && text.length < 500){
-        // Verifica se é card do dashboard (não do financeiro)
-        // Dashboard cards geralmente tem classe rounded e p-5 ou p-6
-        let card = div.closest('div.rounded-\[20px\], div.rounded-\[14px\], div.rounded-xl, div.bg-white');
-        if(card && card.textContent.includes('LUCRO')){
-          // Se estiver no financeiro, não esconde - verifica se tem "Financeiro" no título da página
-          const isFinanceiroPage = document.body.innerHTML.includes('Financeiro') && (document.body.innerHTML.includes('Entradas') || document.body.innerHTML.includes('Saídas'));
-          const isDashboard = !isFinanceiroPage && (window.location.hash === '' || window.location.hash.includes('dashboard') || document.querySelector('[class*="Dashboard"]'));
-          // Por simplicidade, esconde se não estiver explicitamente na página financeiro
-          if(!window.location.href.includes('caixa') && !window.location.href.includes('financeiro')){
-            // Verifica se o card tem apenas LUCRO DE HOJE e não outros dados de financeiro
-            if(card.textContent.includes('LUCRO DE HOJE') || (card.textContent.includes('Lucro') && card.textContent.length < 300)){
-              // Marca para não esconder de novo
-              if(!card.dataset.hidden){
-                // Só esconde se for no dashboard - verifica pelo contexto
-                const dashboardTitle = document.querySelector('h1, h2');
-                if(dashboardTitle && dashboardTitle.textContent.toLowerCase().includes('dashboard')){
-                  card.style.display = 'none';
-                  card.dataset.hidden = 'true';
-                  console.log('Card LUCRO DE HOJE escondido do dashboard');
-                }
-              }
-            }
-          }
-        }
-      }
-    });
-    
-    // Adiciona botão Vendas no dashboard
-    // Procura header do dashboard
-    const headers = document.querySelectorAll('h1, h2, div.font-bold, div.text-2xl');
-    headers.forEach(header=>{
-      if(header.textContent && header.textContent.toLowerCase().includes('dashboard') && !document.getElementById('btn-vendas-dash')){
-        let container = header.parentElement;
-        if(container){
-          // Cria botão
-          const btn = document.createElement('button');
-          btn.id = 'btn-vendas-dash';
-          btn.textContent = '+ Nova Venda';
-          btn.style.cssText = 'background:#00A8FF; color:white; border-radius:12px; padding:10px 20px; font-weight:700; font-size:14px; border:none; cursor:pointer; margin-left:16px;';
-          btn.onclick = ()=>{
-            // Tenta clicar no botão Nova Venda do menu ou mudar rota
-            const novaVendaBtn = Array.from(document.querySelectorAll('button, a, div[role="button"]')).find(el => 
-              (el.textContent.includes('Nova venda') || el.textContent.includes('Nova Venda')) && el !== btn
-            );
-            if(novaVendaBtn) novaVendaBtn.click();
-            else {
-              // Fallback: tenta encontrar pela sidebar
-              const sidebarBtn = document.querySelector('[data-page="nova"], [href="#nova"]');
-              if(sidebarBtn) sidebarBtn.click();
-            }
-          };
-          // Adiciona ao lado do título se for flex
-          if(container.style.display === 'flex' || container.className.includes('flex')){
-            container.appendChild(btn);
-          } else {
-            // Cria wrapper flex
-            const wrapper = document.createElement('div');
-            wrapper.style.display = 'flex';
-            wrapper.style.alignItems = 'center';
-            wrapper.style.justifyContent = 'space-between';
-            wrapper.style.width = '100%';
-            header.parentNode.insertBefore(wrapper, header);
-            wrapper.appendChild(header);
-            wrapper.appendChild(btn);
-          }
-          console.log('Botão Vendas adicionado no dashboard');
-        }
-      }
-    });
-  }
-  
-  // Roda periodicamente
-  setInterval(fixDashboard, 1500);
-  setTimeout(fixDashboard, 800);
-  document.addEventListener('DOMContentLoaded', fixDashboard);
-})();
-</script>
+
+
+
+
+
+
+
 
 
 <script>
-// Adicionar botão Vendas no dashboard - mantendo layout original
 (function(){
-  function addVendasButton(){
-    // Procura dashboard header
-    const allHeaders = document.querySelectorAll('h1, h2, div.text-2xl, div.font-bold.text-xl');
-    allHeaders.forEach(h=>{
-      if(h.textContent && h.textContent.toLowerCase().includes('dashboard') && !document.getElementById('btn-vendas-dash-original')){
-        // Cria container se não for flex
-        let parent = h.parentElement;
-        if(parent){
-          const btn = document.createElement('button');
-          btn.id = 'btn-vendas-dash-original';
-          btn.innerHTML = '+ Nova Venda';
-          btn.style.cssText = 'background:#00A8FF; color:white; border-radius:12px; padding:10px 20px; font-weight:700; font-size:14px; border:none; cursor:pointer; margin-left:auto;';
-          btn.onclick = ()=>{
-            // Encontra botão Nova Venda na sidebar ou no header
-            const buttons = Array.from(document.querySelectorAll('button, a, div[role="button"]'));
-            const novaVendaBtn = buttons.find(b => 
-              (b.textContent.includes('Nova venda') || b.textContent.includes('Nova Venda')) && 
-              b.id !== 'btn-vendas-dash-original' &&
-              b.textContent.length < 30
-            );
-            if(novaVendaBtn){
-              novaVendaBtn.click();
-            } else {
-              // Fallback: tenta mudar hash ou encontrar pelo ícone
-              window.location.hash = '#nova';
-              // Ou clica no segundo item da sidebar (geralmente Nova Venda)
-              const sidebarItems = document.querySelectorAll('nav button, aside button, div[class*="sidebar"] button');
-              if(sidebarItems[1]) sidebarItems[1].click();
-            }
+  let added = false;
+  function addBtn(){
+    if(added) return;
+    if(document.getElementById('btn-vendas-final-unico')) { added=true; return; }
+    const hs = document.querySelectorAll('h1,h2');
+    for(let h of hs){
+      if(h.textContent.toLowerCase().includes('dashboard')){
+        let p = h.parentElement;
+        if(p){
+          const b = document.createElement('button');
+          b.id = 'btn-vendas-final-unico';
+          b.textContent = '+ Nova Venda';
+          b.style.cssText = 'background:#00A8FF;color:white;border-radius:12px;padding:10px 20px;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-left:16px;';
+          b.onclick = ()=>{
+            const all = Array.from(document.querySelectorAll('button'));
+            const nv = all.find(x=>x.textContent.trim()==='Nova venda');
+            if(nv) nv.click();
           };
-          
-          // Se parent já é flex, adiciona
-          if(parent.classList.contains('flex') || getComputedStyle(parent).display === 'flex'){
-            parent.appendChild(btn);
-          } else {
-            // Transforma parent em flex
-            parent.style.display = 'flex';
-            parent.style.alignItems = 'center';
-            parent.style.justifyContent = 'space-between';
-            parent.appendChild(btn);
-          }
-          console.log('Botão Vendas adicionado no dashboard (layout original)');
+          p.style.display = 'flex';
+          p.style.alignItems = 'center';
+          p.style.justifyContent = 'space-between';
+          p.appendChild(b);
+          added=true;
+          break;
         }
       }
-    });
+    }
   }
-  
-  setInterval(addVendasButton, 1500);
-  setTimeout(addVendasButton, 1000);
+  setInterval(addBtn,2000);
+  setTimeout(addBtn,1000);
 })();
 </script>
 
