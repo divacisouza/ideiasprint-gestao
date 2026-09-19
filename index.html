@@ -103,188 +103,224 @@ create policy "all" on pedidos for all using (true) with check (true);
 create policy "all" on caixa for all using (true) with check (true);
 alter publication supabase_realtime add table clientes, produtos, pedidos, caixa;`),alert("SQL copiado!")},className:"mt-2 h-9 px-4 rounded-[10px] bg-zinc-900 text-white text-xs font-bold",children:"Copiar SQL"})]})]}),i("div",{className:"p-4 rounded-[14px] bg-zinc-50 border border-zinc-200",children:[u("div",{className:"font-bold",children:"Passo 3 • Colar no ERP"}),u("div",{className:"text-zinc-600 mt-1",children:"Em Configurações → ☁️ Sincronização Nuvem, cole URL e Anon Key, clique Testar Conexão. Se Conectado, já sincroniza: ao salvar, faz upsert na nuvem + localStorage; ao iniciar, busca da nuvem e atualiza; Realtime escuta mudanças."})]}),i("div",{className:"p-4 rounded-[14px] bg-emerald-50 border border-emerald-200",children:[u("div",{className:"font-bold text-emerald-800",children:"Dica GitHub Pages"}),i("div",{className:"text-emerald-700 mt-1 text-xs",children:["Este HTML já inclui ",u("code",{className:"px-1 py-0.5 rounded bg-white border",children:"<!-- Ideias Print ERP - Hospedado em GitHub Pages - divacisouza/Ideias-print -->"})," no topo e ",u("code",{className:"px-1 py-0.5 rounded bg-white border",children:'<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/script>'})," no head via injeção. É só fazer upload do arquivo como index.html no repo e ativar Pages."]})]})]}),u("button",{onClick:()=>Tl(!1),className:"mt-5 w-full h-12 rounded-[14px] bg-zinc-900 text-white font-bold",children:"Fechar"})]})]})]})]})}oz.createRoot(document.getElementById("root")).render(u(iz.default.StrictMode,{children:u(S1,{})}));
 </script>
-  <script>(function(){function m(a){var h=a.getAttribute("href");if(!h)return;try{var u=new URL(h,document.baseURI);if((u.protocol==="http:"||u.protocol==="https:")&&u.host!==location.host){a.target="_blank";a.rel="noopener noreferrer";}}catch(e){}}function s(){document.querySelectorAll("a[href]").forEach(m);}if(document.readyState!=="loading"){s();}else{document.addEventListener("DOMContentLoaded",s);}document.addEventListener("click",function(e){var a=e.target&&e.target.closest&&e.target.closest("a[href]");if(a){m(a);}},true);})();</script>
   
 
 <script>
-// Ideias Print - Papéis + Financeiro (safe, last body)
+// Dashboard botao Vendas que FUNCIONA - fix
 (function(){
-  const DEFAULT_PAPEIS = [
-    {id:'p1', nome:'Couchê 115g', tipo:'Couchê', gramatura:115, preco:0.25, unidade:'folha', estoque:100},
-    {id:'p2', nome:'Couchê 150g', tipo:'Couchê', gramatura:150, preco:0.35, unidade:'folha', estoque:100},
-    {id:'p3', nome:'Couchê 300g', tipo:'Couchê', gramatura:300, preco:0.65, unidade:'folha', estoque:50},
-    {id:'p4', nome:'Offset 75g', tipo:'Offset', gramatura:75, preco:0.15, unidade:'folha', estoque:200},
-    {id:'p5', nome:'Offset 90g', tipo:'Offset', gramatura:90, preco:0.18, unidade:'folha', estoque:200},
-    {id:'p6', nome:'Reciclato 180g', tipo:'Reciclato', gramatura:180, preco:0.45, unidade:'folha', estoque:80},
-    {id:'p7', nome:'Fotográfico 180g', tipo:'Fotográfico', gramatura:180, preco:0.80, unidade:'folha', estoque:60},
-    {id:'p8', nome:'Adesivo Vinil', tipo:'Adesivo', gramatura:0, preco:1.20, unidade:'folha', estoque:30},
-    {id:'p9', nome:'Papelão 1mm', tipo:'Papelão', gramatura:0, preco:2.50, unidade:'folha', estoque:20},
-    {id:'p10', nome:'Sulfite A4 75g', tipo:'Sulfite', gramatura:75, preco:0.05, unidade:'folha', estoque:500},
-  ];
-  function getPapeis(){
-    try{
-      let p = JSON.parse(localStorage.getItem('ip_papeis_v5')||'null');
-      if(!p || !Array.isArray(p) || p.length===0){
-        localStorage.setItem('ip_papeis_v5', JSON.stringify(DEFAULT_PAPEIS));
-        return DEFAULT_PAPEIS;
-      }
-      return p;
-    }catch(e){ return DEFAULT_PAPEIS; }
-  }
-  function savePapeis(papeis){ localStorage.setItem('ip_papeis_v5', JSON.stringify(papeis)); }
-  window.IdeiasPrintPapeis = {
-    get: getPapeis,
-    save: savePapeis,
-    add: function(papel){ let papeis = getPapeis(); papel.id = 'papel_'+Date.now(); papeis.unshift(papel); savePapeis(papeis); return papeis; },
-    remove: function(id){ let papeis = getPapeis().filter(function(p){return p.id!==id;}); savePapeis(papeis); return papeis; }
-  };
-  window.IdeiasPrintFinanceiro = {
-    getSaldo: function(){
-      try{
-        let caixa = JSON.parse(localStorage.getItem('ip_caixa_v5')||'[]');
-        let entradas = caixa.filter(function(i){return i.tipo==='entrada';}).reduce(function(s,i){return s+(i.valor||0);},0);
-        let saidas = caixa.filter(function(i){return i.tipo==='saida';}).reduce(function(s,i){return s+(i.valor||0);},0);
-        return {entradas: entradas, saidas: saidas, saldo: entradas - saidas};
-      }catch(e){ return {entradas:0, saidas:0, saldo:0}; }
-    }
-  };
-})();
-</script>
-
-
-<script>
-// Ideias Print - Banner com medidas na venda
-(function(){
-  // Helper para calcular area e atualizar item
-  window.IdeiasPrintBanner = {
-    calcularArea: function(largura, altura){
-      let l = parseFloat(largura)||0;
-      let a = parseFloat(altura)||0;
-      if(l<=0) l=1;
-      if(a<=0) a=1;
-      return +(l*a).toFixed(2);
-    },
-    formatarMedida: function(l, a){
-      return `${l}x${a}m = ${(l*a).toFixed(2)}m²`;
-    }
-  };
-  console.log('Ideias Print - Banner com medidas carregado');
-})();
-</script>
-
-
-<script>
-// Ideias Print - Fluxo completo mantendo layout original
-(function(){
-  function adicionarFluxo(){
-    if(document.getElementById('modal-venda-registrada')) return;
-    const modalHTML = `
-      <div id="modal-venda-registrada" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.5); backdrop-filter:blur(4px); align-items:center; justify-content:center; padding:16px;">
-        <div style="background:white; border-radius:24px; max-width:480px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.2); overflow:hidden;">
-          <div style="padding:32px 32px 24px;">
-            <div style="width:48px; height:48px; background:#E6F4FF; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00A8FF" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            </div>
-            <h2 style="font-size:20px; font-weight:800; color:#111; margin:0 0 8px;">Venda registrada!</h2>
-            <p style="font-size:14px; color:#71717a; margin:0 0 20px;">Cliente <strong id="conf-cliente" style="color:#111;">Balcao</strong> - <span id="conf-itens">1 item</span></p>
-            <div style="background:#f9f9f9; border-radius:16px; padding:16px;">
-              <div style="display:flex; justify-content:space-between; font-size:14px; color:#71717a; margin-bottom:8px;"><span>Subtotal</span><span id="conf-subtotal" style="color:#111; font-weight:600;">R$ 0,00</span></div>
-              <div style="display:flex; justify-content:space-between; font-size:14px; color:#71717a; margin-bottom:12px;"><span>Desconto</span><span id="conf-desconto" style="color:#ef4444;">- R$ 0,00</span></div>
-              <div style="height:1px; background:#e4e4e7; margin-bottom:12px;"></div>
-              <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:700; color:#111;"><span>Total</span><span id="conf-total">R$ 0,00</span></div>
-            </div>
-          </div>
-          <div style="padding:16px 32px 24px; border-top:1px solid #f4f4f5; display:flex; justify-content:flex-end;">
-            <button id="btn-continuar-recibo" style="background:#111; color:white; border-radius:9999px; padding:12px 24px; font-weight:700; border:none; cursor:pointer;">Continuar para Recibo</button>
-          </div>
-        </div>
-      </div>
-      <div id="modal-recibo-cliente" style="display:none; position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,0.6); backdrop-filter:blur(6px); align-items:center; justify-content:center; padding:16px;">
-        <div style="background:white; border-radius:24px; max-width:600px; width:100%; max-height:90vh; overflow-y:auto;">
-          <div style="padding:24px; border-bottom:1px solid #f4f4f5; display:flex; justify-content:space-between; align-items:center;">
-            <div><h2 style="font-size:18px; font-weight:800; margin:0;">Enviar recibo para o cliente</h2><p style="font-size:13px; color:#71717a; margin:4px 0 0;">Escolha como enviar o comprovante</p></div>
-            <button id="fechar-recibo" style="width:32px; height:32px; border-radius:50%; background:#f4f4f5; border:none; cursor:pointer;">X</button>
-          </div>
-          <div style="padding:24px; text-align:center;">
-            <div style="border:2px dashed #e4e4e7; border-radius:16px; padding:32px;">
-              <div style="font-size:32px; margin-bottom:12px;">Recibo com logo oficial</div>
-              <p style="font-size:13px; color:#71717a;">Logo proporcional sem achatar, sem nome duplicado, sem emoji</p>
-            </div>
-          </div>
-          <div style="padding:16px 24px; display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-            <button id="btn-whatsapp" style="background:#22c55e; color:white; border-radius:14px; padding:14px; font-weight:700; border:none; cursor:pointer;">WhatsApp</button>
-            <button id="btn-imagem" style="background:#00A8FF; color:white; border-radius:14px; padding:14px; font-weight:700; border:none; cursor:pointer;">Imagem</button>
-            <button id="btn-pdf" style="background:#FF1E8F; color:white; border-radius:14px; padding:14px; font-weight:700; border:none; cursor:pointer;">PDF com Logo</button>
-            <button id="btn-imprimir" style="background:white; color:#111; border:2px solid #111; border-radius:14px; padding:14px; font-weight:700; cursor:pointer;">Imprimir</button>
-          </div>
-          <div style="padding:0 24px 24px;"><button id="btn-nova-venda" style="width:100%; background:#f4f4f5; border-radius:14px; padding:12px; border:none; cursor:pointer; font-weight:600;">Nova venda</button></div>
-        </div>
-      </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-    window.mostrarConfirmacaoVenda = function(d){ 
-      document.getElementById('conf-cliente').textContent = d.cliente||'Balcao';
-      document.getElementById('conf-itens').textContent = d.qtdItens+' itens';
-      document.getElementById('conf-subtotal').textContent = 'R$ '+d.subtotal.toFixed(2);
-      document.getElementById('conf-desconto').textContent = '- R$ '+d.desconto.toFixed(2);
-      document.getElementById('conf-total').textContent = 'R$ '+d.total.toFixed(2);
-      document.getElementById('modal-venda-registrada').style.display='flex';
-    };
-    window.mostrarReciboCliente = function(){ 
-      document.getElementById('modal-venda-registrada').style.display='none';
-      document.getElementById('modal-recibo-cliente').style.display='flex';
-    };
-    document.getElementById('btn-continuar-recibo').addEventListener('click', window.mostrarReciboCliente);
-    document.getElementById('fechar-recibo').addEventListener('click', function(){ document.getElementById('modal-recibo-cliente').style.display='none'; });
-    document.getElementById('btn-nova-venda').addEventListener('click', function(){ document.getElementById('modal-recibo-cliente').style.display='none'; document.getElementById('modal-venda-registrada').style.display='none'; });
-    console.log('Fluxo completo mantendo layout original carregado');
-  }
-  if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', adicionarFluxo); } else { setTimeout(adicionarFluxo, 1000); }
-})();
-</script>
-
-
-
-
-
-
-
-
-
-
-
-<script>
-(function(){
-  let added = false;
+  let added=false;
   function addBtn(){
     if(added) return;
-    if(document.getElementById('btn-vendas-final-unico')) { added=true; return; }
-    const hs = document.querySelectorAll('h1,h2');
+    if(document.getElementById('btn-vendas-dash-fix')){added=true;return;}
+    const hs=document.querySelectorAll('h1,h2');
     for(let h of hs){
       if(h.textContent.toLowerCase().includes('dashboard')){
-        let p = h.parentElement;
+        let p=h.parentElement;
         if(p){
-          const b = document.createElement('button');
-          b.id = 'btn-vendas-final-unico';
-          b.textContent = '+ Nova Venda';
-          b.style.cssText = 'background:#00A8FF;color:white;border-radius:12px;padding:10px 20px;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-left:16px;';
-          b.onclick = ()=>{
-            const all = Array.from(document.querySelectorAll('button'));
-            const nv = all.find(x=>x.textContent.trim()==='Nova venda');
-            if(nv) nv.click();
+          const b=document.createElement('button');
+          b.id='btn-vendas-dash-fix';
+          b.textContent='+ Nova Venda';
+          b.style.cssText='background:#00A8FF;color:white;border-radius:12px;padding:10px 20px;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-left:16px;';
+          b.onclick=()=>{
+            // Tenta várias formas de navegar para Nova Venda
+            // 1. Clica no item da sidebar
+            const sidebar = document.querySelector('aside, nav, div[class*="sidebar"]');
+            if(sidebar){
+              const items = Array.from(sidebar.querySelectorAll('button, a, div[role="button"], div.cursor-pointer'));
+              for(let item of items){
+                if(item.textContent && item.textContent.toLowerCase().includes('nova venda')){
+                  item.click();
+                  console.log('Clicou sidebar Nova Venda');
+                  return;
+                }
+              }
+            }
+            // 2. Procura botão Nova Venda em qualquer lugar
+            const allBtns = Array.from(document.querySelectorAll('button'));
+            for(let btn of allBtns){
+              if(btn.textContent.trim().toLowerCase() === 'nova venda' && btn.id !== 'btn-vendas-dash-fix'){
+                btn.click();
+                console.log('Clicou botão Nova Venda');
+                return;
+              }
+            }
+            // 3. Fallback hash
+            window.location.hash = '#nova-venda';
+            console.log('Usou hash #nova-venda');
           };
-          p.style.display = 'flex';
-          p.style.alignItems = 'center';
-          p.style.justifyContent = 'space-between';
+          p.style.display='flex';
+          p.style.alignItems='center';
+          p.style.justifyContent='space-between';
           p.appendChild(b);
           added=true;
+          console.log('Botão Vendas dashboard adicionado e funcionando');
           break;
         }
       }
     }
   }
-  setInterval(addBtn,2000);
+  setInterval(addBtn,1500);
   setTimeout(addBtn,1000);
+})();
+</script>
+
+<script>
+// Financeiro: Lucro dia/mes/periodo - CORRIGIDO para ficar no Financeiro/Caixa
+(function(){
+  function enhanceFinanceiroFix(){
+    // Procura por "Caixa" ou "Financeiro" no menu ou título, não por "Resumo Financeiro" que existe na Nova Venda também
+    const isFinanceiroPage = () => {
+      // Verifica se estamos na página Financeiro/Caixa
+      const url = window.location.href.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      const bodyText = document.body.innerText.toLowerCase();
+      
+      // Se URL ou hash contém caixa ou financeiro
+      if(url.includes('caixa') || hash.includes('caixa') || hash.includes('financeiro')) return true;
+      
+      // Se tem título "Caixa" ou "Financeiro" e também tem "Entradas" e "Saídas" (característico do financeiro)
+      const hasCaixaTitle = Array.from(document.querySelectorAll('h1,h2')).some(h => 
+        h.textContent.toLowerCase().includes('caixa') || h.textContent.toLowerCase().includes('financeiro')
+      );
+      const hasEntradasSaidas = bodyText.includes('entradas') && bodyText.includes('saídas');
+      
+      return hasCaixaTitle && hasEntradasSaidas;
+    };
+    
+    if(!isFinanceiroPage()) return;
+    if(document.getElementById('lucro-periodo-cards-fix')) return;
+    
+    // Procura container do Financeiro - deve ter "Saldo" ou "Entradas" e ser um card branco grande
+    const containers = Array.from(document.querySelectorAll('div.bg-white.rounded-\[20px\], div.bg-white.rounded-\[14px\]'));
+    let targetContainer = null;
+    
+    for(let cont of containers){
+      const text = cont.innerText.toLowerCase();
+      // Financeiro tem Saldo, Entradas, Saídas, e não tem "Adicionar serviço"
+      if(text.includes('saldo') && text.includes('entradas') && !text.includes('adicionar serviço')){
+        // E tem tamanho razoável
+        if(cont.innerText.length > 200 && cont.innerText.length < 5000){
+          targetContainer = cont;
+          break;
+        }
+      }
+    }
+    
+    if(!targetContainer) return;
+    
+    // Verifica se já tem lucro
+    if(targetContainer.innerHTML.includes('Lucro do Dia')) return;
+    
+    const lucroCards = document.createElement('div');
+    lucroCards.id = 'lucro-periodo-cards-fix';
+    lucroCards.innerHTML = `
+      <div style="margin-top:24px; padding-top:24px; border-top:2px solid #f4f4f5;">
+        <h3 style="font-size:16px; font-weight:800; margin-bottom:16px; display:flex; align-items:center; gap:8px;">
+          <span style="background:#FF1E8F; width:4px; height:20px; border-radius:2px; display:inline-block;"></span>
+          Lucro por Período
+        </h3>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
+          <div style="background:white; border:2px solid #FF1E8F; border-radius:16px; padding:16px; box-shadow:0 2px 8px rgba(255,30,143,0.1);">
+            <div style="font-size:11px; font-weight:700; color:#71717a; text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px;">Lucro do Dia</div>
+            <div id="lucro-dia-valor-fix" style="font-size:22px; font-weight:800; color:#FF1E8F;">R$ 0,00</div>
+            <div id="lucro-dia-info-fix" style="font-size:11px; color:#71717a; margin-top:6px; line-height:1.4;">0 vendas hoje</div>
+          </div>
+          <div style="background:white; border:2px solid #00A8FF; border-radius:16px; padding:16px; box-shadow:0 2px 8px rgba(0,168,255,0.1);">
+            <div style="font-size:11px; font-weight:700; color:#71717a; text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px;">Lucro do Mês</div>
+            <div id="lucro-mes-valor-fix" style="font-size:22px; font-weight:800; color:#00A8FF;">R$ 0,00</div>
+            <div id="lucro-mes-info-fix" style="font-size:11px; color:#71717a; margin-top:6px; line-height:1.4;">0 vendas no mês</div>
+          </div>
+          <div style="background:white; border:2px solid #111; border-radius:16px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+            <div style="font-size:11px; font-weight:700; color:#71717a; text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px;">Lucro do Período</div>
+            <div id="lucro-periodo-valor-fix" style="font-size:22px; font-weight:800; color:#111;">R$ 0,00</div>
+            <div style="display:flex; gap:8px; margin-top:10px;">
+              <select id="filtro-lucro-periodo-fix" style="flex:1; height:36px; border-radius:10px; border:2px solid #e4e4e7; font-size:12px; padding:0 10px; background:white; font-weight:600;">
+                <option value="hoje">Hoje</option>
+                <option value="semana">Esta Semana</option>
+                <option value="mes" selected>Este Mês</option>
+                <option value="todo">Todo Período</option>
+              </select>
+            </div>
+            <div id="lucro-periodo-info-fix" style="font-size:11px; color:#71717a; margin-top:6px; line-height:1.4;">Filtrado</div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    targetContainer.appendChild(lucroCards);
+    
+    function calcularLucrosFix(){
+      try{
+        const pedidos = JSON.parse(localStorage.getItem('ip_pedidos_v5')||'[]');
+        const hojeStr = new Date().toDateString();
+        const mes = new Date().getMonth();
+        const ano = new Date().getFullYear();
+        
+        let lucroDia = 0, vendasDia = 0, fatDia = 0;
+        let lucroMes = 0, vendasMes = 0, fatMes = 0;
+        
+        pedidos.forEach(p=>{
+          if(p.status === 'Orçamento') return;
+          const data = new Date(p.data || p.criadoEm || Date.now());
+          const lucro = (p.subtotalVenda || p.total || 0) - (p.subtotalCusto || p.custoTotal || 0);
+          
+          if(data.toDateString() === hojeStr){
+            lucroDia += lucro;
+            vendasDia++;
+            fatDia += (p.subtotalVenda || p.total || 0);
+          }
+          if(data.getMonth() === mes && data.getFullYear() === ano){
+            lucroMes += lucro;
+            vendasMes++;
+            fatMes += (p.subtotalVenda || p.total || 0);
+          }
+        });
+        
+        const elDiaValor = document.getElementById('lucro-dia-valor-fix');
+        const elDiaInfo = document.getElementById('lucro-dia-info-fix');
+        const elMesValor = document.getElementById('lucro-mes-valor-fix');
+        const elMesInfo = document.getElementById('lucro-mes-info-fix');
+        
+        if(elDiaValor) elDiaValor.textContent = 'R$ ' + lucroDia.toFixed(2).replace('.',',');
+        if(elDiaInfo) elDiaInfo.textContent = vendasDia + ' vendas • R$ ' + fatDia.toFixed(2).replace('.',',') + ' faturado';
+        if(elMesValor) elMesValor.textContent = 'R$ ' + lucroMes.toFixed(2).replace('.',',');
+        if(elMesInfo) elMesInfo.textContent = vendasMes + ' vendas no mês • R$ ' + fatMes.toFixed(2).replace('.',',');
+        
+        const filtro = document.getElementById('filtro-lucro-periodo-fix')?.value || 'mes';
+        let lucroPeriodo = 0, vendasPeriodo = 0, fatPeriodo = 0;
+        let inicio = new Date();
+        if(filtro === 'hoje') inicio.setHours(0,0,0,0);
+        else if(filtro === 'semana') inicio.setDate(inicio.getDate()-7);
+        else if(filtro === 'mes') { inicio.setDate(1); inicio.setHours(0,0,0,0); }
+        else if(filtro === 'todo') inicio = new Date(0);
+        
+        pedidos.forEach(p=>{
+          if(p.status === 'Orçamento') return;
+          const data = new Date(p.data || p.criadoEm || Date.now());
+          if(data >= inicio){
+            lucroPeriodo += (p.subtotalVenda || p.total || 0) - (p.subtotalCusto || p.custoTotal || 0);
+            vendasPeriodo++;
+            fatPeriodo += (p.subtotalVenda || p.total || 0);
+          }
+        });
+        
+        const elPerValor = document.getElementById('lucro-periodo-valor-fix');
+        const elPerInfo = document.getElementById('lucro-periodo-info-fix');
+        if(elPerValor) elPerValor.textContent = 'R$ ' + lucroPeriodo.toFixed(2).replace('.',',');
+        if(elPerInfo) elPerInfo.textContent = vendasPeriodo + ' vendas • R$ ' + fatPeriodo.toFixed(2).replace('.',',') + ' • ' + filtro;
+        
+      }catch(e){ console.log('Erro calcular lucros fix', e); }
+    }
+    
+    setInterval(calcularLucrosFix, 3000);
+    setTimeout(calcularLucrosFix, 1000);
+    document.getElementById('filtro-lucro-periodo-fix')?.addEventListener('change', calcularLucrosFix);
+    
+    console.log('Financeiro lucro dia/mes/periodo FIX adicionado no Financeiro correto');
+  }
+  
+  setInterval(enhanceFinanceiroFix, 2000);
+  setTimeout(enhanceFinanceiroFix, 1500);
 })();
 </script>
 
